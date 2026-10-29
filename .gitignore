@@ -1,24 +1,26 @@
-*venv
-*env
-# *sqlite3
-
-*__pycache__
-
-
-
 .env
 .env.*
 !.env.example
 
+__pycache__/
+*.py[cod]
+*.log
+.venv/
+venv/
+*venv/
+
+staticfiles/
+media/
+media.*/
 db.sqlite3*
 *.sqlite3
 *.sqlite3-*
-
-media/
-media.*/
-staticfiles/
 
 *.before-security
 *.before-migration-repair
 *.before-nonroot
 *.migration-test
+
+.vscode/
+.idea/
+.DS_Store
