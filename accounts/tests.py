@@ -1,12 +1,12 @@
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse, resolve
 
 from accounts.views import UserLogin, SignupView
 
 
 class AccountURLTests(SimpleTestCase):
-    """Test account URL routing without creating database records."""
+    """Test account URL routing without database access."""
 
     def test_login_url_resolves(self):
         match = resolve("/auth/login/")
@@ -17,8 +17,8 @@ class AccountURLTests(SimpleTestCase):
         self.assertEqual(match.func.view_class, SignupView)
 
 
-class AccountPageTests(SimpleTestCase):
-    """Test that public account pages respond successfully."""
+class AccountPageTests(TestCase):
+    """Test public account pages using Django's isolated test database."""
 
     def test_login_page_returns_success(self):
         response = self.client.get(reverse("login"))
