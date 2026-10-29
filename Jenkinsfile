@@ -7,7 +7,7 @@ pipeline {
     options {
         timestamps()
         disableConcurrentBuilds()
-        timeout(time: 20, unit: 'MINUTES')
+        timeout(time: 30, unit: 'MINUTES')
     }
 
     environment {
@@ -27,10 +27,12 @@ pipeline {
             steps {
                 sh '''
                     set -eu
+
                     echo "Checking installed tools..."
                     git --version
                     python3 --version
                     docker version
+                    trivy --version
                 '''
             }
         }
@@ -39,6 +41,8 @@ pipeline {
             steps {
                 sh '''
                     set -eu
+
+                    echo "Building Django application image..."
                     docker build -t "$CI_IMAGE" .
                 '''
             }
@@ -48,6 +52,8 @@ pipeline {
             steps {
                 sh '''
                     set -eu
+
+                    echo "Running Django system checks..."
                     docker run --rm \
                         --entrypoint python \
                         -e SECRET_KEY="$CI_SECRET_KEY" \
@@ -62,6 +68,8 @@ pipeline {
             steps {
                 sh '''
                     set -eu
+
+                    echo "Running account and API tests..."
                     docker run --rm \
                         --entrypoint python \
                         -e SECRET_KEY="$CI_SECRET_KEY" \
@@ -71,19 +79,37 @@ pipeline {
                 '''
             }
         }
+
+        stage('Trivy Image Scan') {
+            steps {
+                sh '''
+                    set -eu
+
+                    echo "Scanning Docker image for HIGH and CRITICAL vulnerabilities..."
+
+                    trivy image \
+                        --scanners vuln \
+                        --severity HIGH,CRITICAL \
+                        --no-progress \
+                        "$CI_IMAGE"
+                '''
+            }
+        }
     }
 
     post {
         success {
-            echo 'CI pipeline passed: Docker build, Django check, and automated tests!'
+            echo 'CI pipeline passed: Docker build, Django checks, automated tests, and Trivy scan!'
         }
 
         failure {
-            echo 'CI pipeline failed. Review the stage logs.'
+            echo 'CI pipeline failed. Review the stage logs to identify the failing step.'
         }
 
         always {
-            sh 'docker image rm "$CI_IMAGE" || true'
+            sh '''
+                docker image rm "$CI_IMAGE" || true
+            '''
         }
     }
 }
