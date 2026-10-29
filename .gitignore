@@ -3,3 +3,22 @@
 # *sqlite3
 
 *__pycache__
+
+
+
+.env
+.env.*
+!.env.example
+
+db.sqlite3*
+*.sqlite3
+*.sqlite3-*
+
+media/
+media.*/
+staticfiles/
+
+*.before-security
+*.before-migration-repair
+*.before-nonroot
+*.migration-test
