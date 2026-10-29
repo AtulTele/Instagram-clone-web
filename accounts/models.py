@@ -15,7 +15,7 @@ class User(AbstractUser):
     bio = models.TextField()
     gender = models.CharField(max_length=7, blank=False)
     country = models.CharField(max_length=30, blank=False)
-    phone_no = PhoneNumberField(blank=False)
+    phone_no = PhoneNumberField(blank=False, region="IN")
     profile_pic = models.ImageField(upload_to=user_directory_path, default='default.png')
     date_updated = models.DateTimeField(auto_now=True)
 

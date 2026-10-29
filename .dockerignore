@@ -1,0 +1,19 @@
+
+.git/
+.github/
+__pycache__/
+*.py[cod]
+*venv/
+.venv/
+.env
+*.log
+
+# Keep database files and backups out of the image build context
+db.sqlite3*
+*.sqlite3
+*.sqlite3-*
+
+# User uploads and generated files
+media/
+media.before-migration-repair/
+staticfiles/
