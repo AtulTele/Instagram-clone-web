@@ -10,6 +10,12 @@ pipeline {
         timeout(time: 20, unit: 'MINUTES')
     }
 
+    environment {
+        CI_IMAGE = 'instagram-clone:ci'
+        CI_SECRET_KEY = 'temporary-ci-secret-for-tests-only'
+        WEB_DOMAIN = 'localhost,127.0.0.1'
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -33,7 +39,7 @@ pipeline {
             steps {
                 sh '''
                     set -eu
-                    docker build -t instagram-clone:ci .
+                    docker build -t "$CI_IMAGE" .
                 '''
             }
         }
@@ -44,9 +50,24 @@ pipeline {
                     set -eu
                     docker run --rm \
                         --entrypoint python \
-                        -e SECRET_KEY=ci-only-temporary-secret-not-for-production \
-                        instagram-clone:ci \
+                        -e SECRET_KEY="$CI_SECRET_KEY" \
+                        -e WEB_DOMAIN="$WEB_DOMAIN" \
+                        "$CI_IMAGE" \
                         manage.py check
+                '''
+            }
+        }
+
+        stage('Automated Tests') {
+            steps {
+                sh '''
+                    set -eu
+                    docker run --rm \
+                        --entrypoint python \
+                        -e SECRET_KEY="$CI_SECRET_KEY" \
+                        -e WEB_DOMAIN="$WEB_DOMAIN" \
+                        "$CI_IMAGE" \
+                        manage.py test accounts api --verbosity 2
                 '''
             }
         }
@@ -54,7 +75,7 @@ pipeline {
 
     post {
         success {
-            echo 'CI pipeline completed successfully!'
+            echo 'CI pipeline passed: Docker build, Django check, and automated tests!'
         }
 
         failure {
@@ -62,7 +83,7 @@ pipeline {
         }
 
         always {
-            sh 'docker image rm instagram-clone:ci || true'
+            sh 'docker image rm "$CI_IMAGE" || true'
         }
     }
 }
