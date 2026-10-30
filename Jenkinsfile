@@ -54,6 +54,7 @@ pipeline {
                     set -eu
 
                     echo "Running Django system checks..."
+
                     docker run --rm \
                         --entrypoint python \
                         -e SECRET_KEY="$CI_SECRET_KEY" \
@@ -70,6 +71,7 @@ pipeline {
                     set -eu
 
                     echo "Running account and API tests..."
+
                     docker run --rm \
                         --entrypoint python \
                         -e SECRET_KEY="$CI_SECRET_KEY" \
@@ -80,18 +82,30 @@ pipeline {
             }
         }
 
-        stage('Trivy Image Scan') {
+        stage('Trivy Security Report') {
             steps {
                 sh '''
                     set -eu
 
-                    echo "Scanning Docker image for HIGH and CRITICAL vulnerabilities..."
+                    echo "Generating complete vulnerability report..."
+
+                    trivy image \
+                        --scanners vuln \
+                        --format json \
+                        --output trivy-report.json \
+                        --no-progress \
+                        "$CI_IMAGE"
+
+                    echo "Displaying HIGH and CRITICAL vulnerabilities..."
 
                     trivy image \
                         --scanners vuln \
                         --severity HIGH,CRITICAL \
+                        --exit-code 0 \
                         --no-progress \
                         "$CI_IMAGE"
+
+                    echo "Security report generated successfully."
                 '''
             }
         }
@@ -99,14 +113,19 @@ pipeline {
 
     post {
         success {
-            echo 'CI pipeline passed: Docker build, Django checks, automated tests, and Trivy scan!'
+            echo 'CI passed: Docker build, Django checks, tests, and security report generation.'
         }
 
         failure {
-            echo 'CI pipeline failed. Review the stage logs to identify the failing step.'
+            echo 'CI failed. Review the stage logs and archived reports.'
         }
 
         always {
+            archiveArtifacts(
+                artifacts: 'trivy-report.json',
+                allowEmptyArchive: true
+            )
+
             sh '''
                 docker image rm "$CI_IMAGE" || true
             '''
