@@ -41,3 +41,35 @@ jobs:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           WEB_DOMAIN: localhost,127.0.0.1
         run: python manage.py test accounts api --verbosity 2
+
+      - name: Build Docker image
+        run: |
+          docker build -t instagram-clone:ci .
+
+      - name: Trivy vulnerability report
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: image
+          image-ref: instagram-clone:ci
+          format: json
+          output: trivy-report.json
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          exit-code: '0'
+
+      - name: Display HIGH and CRITICAL vulnerabilities
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: image
+          image-ref: instagram-clone:ci
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+
+      - name: Upload Trivy security report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-security-report
+          path: trivy-report.json
+          if-no-files-found: warn
+          retention-days: 14
